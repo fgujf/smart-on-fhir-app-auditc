@@ -22,6 +22,44 @@
   </style>
 </head>
 <body>
+<script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
+
+<div id="contextBanner" style="background:#f0f0f0;padding:8px;margin-bottom:15px;border-radius:5px;">
+  Loading patient and provider info...
+</div>
+
+<script>
+  FHIR.oauth2.ready().then(async client => {
+    window.smartClient = client;
+    let banner = "";
+
+    if (client.patient && client.patient.id) {
+      try {
+        const patient = await client.patient.read();
+        const name = (patient.name?.[0]?.given?.join(" ") || "") + " " + (patient.name?.[0]?.family || "");
+        banner += `<b>Patient:</b> ${name} | <b>Gender:</b> ${patient.gender || "Unknown"} | <b>DOB:</b> ${patient.birthDate || "Unknown"}`;
+        document.getElementById('saveToEHRBtn').disabled = false;
+      } catch {
+        banner += "<b>Patient:</b> Unknown";
+      }
+    } else {
+      banner += "<b>Patient:</b> No context";
+    }
+
+    try {
+      const user = await client.user.read();
+      const username = (user.name?.[0]?.given?.[0] || "") + " " + (user.name?.[0]?.family || "");
+      banner += `<br><b>User:</b> ${username || user.id || "Unknown"} (${user.resourceType})`;
+    } catch {
+      banner += "<br><b>User:</b> Unknown";
+    }
+
+    document.getElementById("contextBanner").innerHTML = banner;
+  }).catch(err => {
+    console.error("SMART flow failed:", err);
+    document.getElementById("contextBanner").textContent = "Failed to load context.";
+  });
+</script>
 
   <h1>Alcohol Assessment – AUDIT C</h1>
   <!-- SMART client -->
