@@ -245,9 +245,11 @@
 <script>
   window.smartClient = null;
 
-  FHIR.oauth2.ready().then(async function(client) {
+  FHIR.oauth2.ready().then(async client => {
     window.smartClient = client;
     console.log("SMART client ready", client);
+
+    let banner = "";
 
     // --- Patient info ---
     if (client.patient && client.patient.id) {
@@ -258,15 +260,14 @@
           : "Unknown";
         const gender = patient.gender || "Unknown";
         const dob = patient.birthDate || "Unknown";
-
-        document.getElementById("contextBanner").innerHTML =
-          `<b>Patient:</b> ${name} | <b>Gender:</b> ${gender} | <b>DOB:</b> ${dob}`;
+        banner += `<b>Patient:</b> ${name} | <b>Gender:</b> ${gender} | <b>DOB:</b> ${dob}`;
         document.getElementById("saveToEHRBtn").disabled = false;
       } catch (e) {
         console.error("Patient read failed", e);
+        banner += "<b>Patient:</b> Unknown";
       }
     } else {
-      document.getElementById("contextBanner").innerHTML = "No patient context.";
+      banner += "No patient context.";
     }
 
     // --- User (provider) info ---
@@ -275,18 +276,18 @@
       const username = user.name?.[0]
         ? ((user.name[0].given?.[0] || "") + " " + (user.name[0].family || ""))
         : (user.id || "Unknown");
-      document.getElementById("contextBanner").innerHTML +=
-        `<br><b>User:</b> ${username} (${user.resourceType})`;
+      banner += `<br><b>User:</b> ${username} (${user.resourceType})`;
     } catch (e) {
       console.warn("User read failed", e);
-      document.getElementById("contextBanner").innerHTML += "<br><b>User:</b> Unknown";
+      banner += "<br><b>User:</b> Unknown";
     }
+
+    document.getElementById("contextBanner").innerHTML = banner;
   }).catch(err => {
-    console.warn("SMART ready() failed", err);
+    console.error("SMART ready() failed", err);
     document.getElementById("contextBanner").innerHTML = "SMART launch failed.";
   });
 </script>
-
 
 <script>
 async function saveToEHR() {
