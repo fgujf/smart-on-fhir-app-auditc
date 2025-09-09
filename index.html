@@ -272,61 +272,6 @@
         riskSeverity.classList.add("risk-dependence");
       }
     }
-
-    
-<script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
-
-<div id="contextBanner" style="background:#f0f0f0;padding:8px;margin-bottom:15px;border-radius:5px;">
-  Loading patient and user info...
-</div>
-
-<script>
-  window.smartClient = null;
-
-  FHIR.oauth2.ready().then(async client => {
-    window.smartClient = client;
-    console.log("SMART client ready", client);
-
-    let banner = "";
-
-    // --- Patient info ---
-    if (client.patient && client.patient.id) {
-      try {
-        const patient = await client.patient.read();
-        const name = patient.name?.[0]
-          ? ((patient.name[0].given || []).join(" ") + " " + (patient.name[0].family || ""))
-          : "Unknown";
-        const gender = patient.gender || "Unknown";
-        const dob = patient.birthDate || "Unknown";
-        banner += `<b>Patient:</b> ${name} | <b>Gender:</b> ${gender} | <b>DOB:</b> ${dob}`;
-        document.getElementById("saveToEHRBtn").disabled = false;
-      } catch (e) {
-        console.error("Patient read failed", e);
-        banner += "<b>Patient:</b> Unknown";
-      }
-    } else {
-      banner += "No patient context.";
-    }
-
-    // --- User (provider) info ---
-    try {
-      const user = await client.user.read();
-      const username = user.name?.[0]
-        ? ((user.name[0].given?.[0] || "") + " " + (user.name[0].family || ""))
-        : (user.id || "Unknown");
-      banner += `<br><b>User:</b> ${username} (${user.resourceType})`;
-    } catch (e) {
-      console.warn("User read failed", e);
-      banner += "<br><b>User:</b> Unknown";
-    }
-
-    document.getElementById("contextBanner").innerHTML = banner;
-  }).catch(err => {
-    console.error("SMART ready() failed", err);
-    document.getElementById("contextBanner").innerHTML = "SMART launch failed.";
-  });
-</script>
-
 <script>
 async function saveToEHR() {
   if (!window.smartClient) {
