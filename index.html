@@ -243,7 +243,38 @@
     FHIR.oauth2.ready().then(function(client) {
       window.smartClient = client;
       console.log("SMART client ready", client);
+      // Show patient demographics
+  if (client.patient && client.patient.id) {
+    try {
+      const patient = await client.patient.read();
+      const name = (patient.name && patient.name[0]) 
+        ? (patient.name[0].given?.join(" ") + " " + patient.name[0].family) 
+        : "Unknown";
+      const gender = patient.gender || "Unknown";
+      const birthDate = patient.birthDate || "Unknown";
 
+      document.querySelector("body").insertAdjacentHTML("afterbegin",
+        `<div style="background:#eee;padding:5px;">
+           <b>Patient:</b> ${name}, <b>Gender:</b> ${gender}, <b>DOB:</b> ${birthDate}
+         </div>`);
+    } catch (err) {
+      console.error("Failed to read patient:", err);
+    }
+  }
+
+  // Show user (provider) info
+  try {
+    const user = await client.user.read();
+    const username = user.name && user.name[0] 
+      ? (user.name[0].given?.[0] + " " + user.name[0].family) 
+      : (user.id || "Unknown");
+    document.querySelector("body").insertAdjacentHTML("afterbegin",
+      `<div style="background:#ddd;padding:5px;">
+         <b>User:</b> ${username} (${user.resourceType})
+       </div>`);
+  } catch (err) {
+    console.warn("SMART ready() failed", err);
+    });
       // If app has patient context, enable save button
       if (client.patient && client.patient.id) {
         document.getElementById('saveToEHRBtn').disabled = false;
@@ -374,3 +405,4 @@ async function saveToEHR() {
   </script>
 </body>
 </html>
+
