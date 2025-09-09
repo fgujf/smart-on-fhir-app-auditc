@@ -22,44 +22,6 @@
   </style>
 </head>
 <body>
-<script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
-
-<div id="contextBanner" style="background:#f0f0f0;padding:8px;margin-bottom:15px;border-radius:5px;">
-  Loading patient and provider info...
-</div>
-
-<script>
-  FHIR.oauth2.ready().then(async client => {
-    window.smartClient = client;
-    let banner = "";
-
-    if (client.patient && client.patient.id) {
-      try {
-        const patient = await client.patient.read();
-        const name = (patient.name?.[0]?.given?.join(" ") || "") + " " + (patient.name?.[0]?.family || "");
-        banner += `<b>Patient:</b> ${name} | <b>Gender:</b> ${patient.gender || "Unknown"} | <b>DOB:</b> ${patient.birthDate || "Unknown"}`;
-        document.getElementById('saveToEHRBtn').disabled = false;
-      } catch {
-        banner += "<b>Patient:</b> Unknown";
-      }
-    } else {
-      banner += "<b>Patient:</b> No context";
-    }
-
-    try {
-      const user = await client.user.read();
-      const username = (user.name?.[0]?.given?.[0] || "") + " " + (user.name?.[0]?.family || "");
-      banner += `<br><b>User:</b> ${username || user.id || "Unknown"} (${user.resourceType})`;
-    } catch {
-      banner += "<br><b>User:</b> Unknown";
-    }
-
-    document.getElementById("contextBanner").innerHTML = banner;
-  }).catch(err => {
-    console.error("SMART flow failed:", err);
-    document.getElementById("contextBanner").textContent = "Failed to load context.";
-  });
-</script>
 
   <h1>Alcohol Assessment – AUDIT C</h1>
   <!-- SMART client -->
@@ -273,56 +235,63 @@
       }
     }
 
-    <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
+    // --- SMART on FHIR integration ---
+    // Will be filled when FHIR.oauth2.ready() resolves
+    window.smartClient = null;
 
-<div id="contextBanner" style="background:#f0f0f0;padding:8px;margin-bottom:15px;border-radius:5px;">
-  Loading patient and user info...
-</div>
-
-<script>
-  window.smartClient = null;
-
-  FHIR.oauth2.ready().then(async function(client) {
-    window.smartClient = client;
-    console.log("SMART client ready", client);
-
-    // --- Patient info ---
-    if (client.patient && client.patient.id) {
-      try {
-        const patient = await client.patient.read();
-        const name = patient.name?.[0]
-          ? ((patient.name[0].given || []).join(" ") + " " + (patient.name[0].family || ""))
-          : "Unknown";
-        const gender = patient.gender || "Unknown";
-        const dob = patient.birthDate || "Unknown";
-
-        document.getElementById("contextBanner").innerHTML =
-          `<b>Patient:</b> ${name} | <b>Gender:</b> ${gender} | <b>DOB:</b> ${dob}`;
-        document.getElementById("saveToEHRBtn").disabled = false;
-      } catch (e) {
-        console.error("Patient read failed", e);
-      }
-    } else {
-      document.getElementById("contextBanner").innerHTML = "No patient context.";
-    }
-
-    // --- User (provider) info ---
+    // When this page is loaded after a launch/authorize redirect, the library will complete OAuth and return client
+    FHIR.oauth2.ready().then(function(client) {
+      window.smartClient = client;
+      console.log("SMART client ready", client);
+      // Show patient demographics
+  if (client.patient && client.patient.id) {
     try {
-      const user = await client.user.read();
-      const username = user.name?.[0]
-        ? ((user.name[0].given?.[0] || "") + " " + (user.name[0].family || ""))
-        : (user.id || "Unknown");
-      document.getElementById("contextBanner").innerHTML +=
-        `<br><b>User:</b> ${username} (${user.resourceType})`;
-    } catch (e) {
-      console.warn("User read failed", e);
-      document.getElementById("contextBanner").innerHTML += "<br><b>User:</b> Unknown";
+      const patient = await client.patient.read();
+      const name = (patient.name && patient.name[0]) 
+        ? (patient.name[0].given?.join(" ") + " " + patient.name[0].family) 
+        : "Unknown";
+      const gender = patient.gender || "Unknown";
+      const birthDate = patient.birthDate || "Unknown";
+
+      document.querySelector("body").insertAdjacentHTML("afterbegin",
+        `<div style="background:#eee;padding:5px;">
+           <b>Patient:</b> ${name}, <b>Gender:</b> ${gender}, <b>DOB:</b> ${birthDate}
+         </div>`);
+    } catch (err) {
+      console.error("Failed to read patient:", err);
     }
-  }).catch(err => {
+  }
+
+  // Show user (provider) info
+  try {
+    const user = await client.user.read();
+    const username = user.name && user.name[0] 
+      ? (user.name[0].given?.[0] + " " + user.name[0].family) 
+      : (user.id || "Unknown");
+    document.querySelector("body").insertAdjacentHTML("afterbegin",
+      `<div style="background:#ddd;padding:5px;">
+         <b>User:</b> ${username} (${user.resourceType})
+       </div>`);
+  } catch (err) {
     console.warn("SMART ready() failed", err);
-    document.getElementById("contextBanner").innerHTML = "SMART launch failed.";
-  });
-</script>
+    });
+      // If app has patient context, enable save button
+      if (client.patient && client.patient.id) {
+        document.getElementById('saveToEHRBtn').disabled = false;
+        // Optionally show the patient id somewhere for debugging:
+        // alert("Patient in context: " + client.patient.id);
+      } else {
+        // If no patient was selected in launch, you may still allow saving using Patient selection,
+        // but many EHRs launch apps with a patient context. If no patient, keep save disabled.
+        console.warn("No patient context (client.patient.id is not set). Save disabled.");
+      }
+    }).catch(function(err){
+      console.warn("SMART ready() failed (app may not be launched from an EHR).", err);
+      // If you want to support standalone patient access (outside EHR), you'll use authorize flow or different scopes.
+    });
+
+    // Build a QuestionnaireResponse and POST it to the server (patient-scoped write)
+    <script>
 <script>
 async function saveToEHR() {
   if (!window.smartClient) {
