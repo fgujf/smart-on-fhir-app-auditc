@@ -8,11 +8,12 @@
 <script>
   FHIR.oauth2.authorize({
     clientId: "YOUR_CLIENT_ID",
-    scope: "launch openid fhirUser patient/*.read patient/QuestionnaireResponse.write patient/Observation.write",
+   "scope":  "patient/*.read offline_access"
     redirectUri: "index.html"
   });
 </script>
   <p>Starting SMART authorization…</p>
 </body>
 </html>
+
 
