@@ -382,8 +382,12 @@ async function saveToEHR() {
     alert("Save to EHR failed (see console). Server may disallow writes or CORS/permissions issue.");
   }
 }
+    window.calculateFastC = calculateFastC;
+    window.calculateAuditScore = calculateAuditScore;
+    window.saveToEHR = saveToEHR;
   </script>
 </body>
 </html>
+
 
 
