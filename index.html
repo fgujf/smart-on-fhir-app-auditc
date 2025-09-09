@@ -284,7 +284,7 @@
   // --- QuestionnaireResponse with only Q1–Q3 ---
   const qr = {
     resourceType: "QuestionnaireResponse",
-    questionnaire: "http://loinc.org/72109-2", // AUDIT-C Panel
+    //questionnaire: "http://loinc.org/72109-2", // AUDIT-C Panel
     status: "completed",
     subject: { reference: `Patient/${client.patient.id}` },
     authored: new Date().toISOString(),
@@ -384,6 +384,7 @@
   </script>
 </body>
 </html>
+
 
 
 
